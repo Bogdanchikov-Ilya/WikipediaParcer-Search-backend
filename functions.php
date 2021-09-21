@@ -17,7 +17,6 @@ function addArticles($connect, $data) {
     $body = mb_strimwidth($body, 0, 50000, "..."); // обрезаю т.к если много символов в бд не добавляется
     $body = str_replace(array("?","!",",",";",".","-","(",")","—"), "", $body);
     $body = preg_replace('/\s+/', ' ', $body);
-    $body = mb_strtolower($body);
 
     $url = $data['url'];
     $size = $data['size'];
@@ -44,7 +43,7 @@ function addArticles($connect, $data) {
 function search($connect, $data) {
     // обработка введенного слова
     $searchValue = $data['text'];
-    $searchValue= mb_strtolower($searchValue);
+    $searchValue= mb_strtolower(' ' . $searchValue . ' ');
 
 
     //получаю id введенного слова
@@ -59,7 +58,7 @@ function search($connect, $data) {
     // mysqli_query($connect, "INSERT INTO `articles_words` (`words_id`, `counter`) VALUES ('$wordsId', NULL)");
 
     // получаю массив айдишников статей со словом $searchValue
-    $getArticleId = mysqli_query($connect, "SELECT `id` FROM `articles` WHERE `body` LIKE '%в%'");
+    $getArticleId = mysqli_query($connect, "SELECT `id` FROM `articles` WHERE `body` LIKE '%$searchValue%'");
     $articleIdArray = [];
     while ($row = mysqli_fetch_assoc($getArticleId)) {
         $articleIdArray[] = intval($row["id"]);
@@ -85,6 +84,8 @@ function search($connect, $data) {
     // подсчитываю кол-во повторений слова в каждом эелемнте массива $textArticlesArray
     $counterArray = [];
     foreach ($textArticlesArray as $row) {
+        // тут вся очистка боди
+        $row["body"] = mb_strtolower($row["body"]);
         $counterArray[] = substr_count($row["body"], $searchValue);
     }
     $counterArray = json_encode($counterArray);
@@ -100,7 +101,9 @@ function search($connect, $data) {
     $titlesArray = [];
     $res = [];
 
-
+    function f1($n) {
+        return json_encode($n);
+    }
 
     for ($i = 0; $i < count($articleIdArray); $i++) {
 
@@ -109,12 +112,11 @@ function search($connect, $data) {
 
         // SELECT `counter` FROM `articles_id` WHERE `counter` = $counterArray[$is]
 
-        $res[] = ["title" => $titlesArray[$i],
+        $res[] = ["title" => $titlesArray[$i]['title'],
                     "counter" => $counterArray[$i]];
 
     }
     echo json_encode($res);
-    die();
 
     // беру название статиь и количество совпадений и отдаю на фронт
 
